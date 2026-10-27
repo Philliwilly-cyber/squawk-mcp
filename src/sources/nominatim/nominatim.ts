@@ -49,7 +49,7 @@ export class Nominatim {
   private readonly throttle: Throttle;
   private readonly now: () => number;
   private readonly cachePath: string;
-  private cache: Map<string, CacheEntry> | null = null;
+  private cache: Promise<Map<string, CacheEntry>> | null = null;
   private readonly inFlight = new Map<string, Promise<GeocodeResult>>();
 
   constructor(private readonly options: NominatimOptions) {
@@ -85,7 +85,9 @@ export class Nominatim {
   }
 
   private async request(query: string): Promise<Place | null> {
-    const url = new URL("/search", this.options.baseUrl);
+    // Relative to the base so that a path prefix (self-hosted instance) is kept.
+    const base = this.options.baseUrl.endsWith("/") ? this.options.baseUrl : `${this.options.baseUrl}/`;
+    const url = new URL("search", base);
     url.searchParams.set("q", query);
     url.searchParams.set("format", "jsonv2");
     url.searchParams.set("limit", "1");
@@ -103,14 +105,12 @@ export class Nominatim {
     return parsePlace(results[0]);
   }
 
-  private async loadCache(): Promise<Map<string, CacheEntry>> {
-    if (this.cache) return this.cache;
-    try {
-      const raw = JSON.parse(await readFile(this.cachePath, "utf8")) as Record<string, CacheEntry>;
-      this.cache = new Map(Object.entries(raw));
-    } catch {
-      this.cache = new Map();
-    }
+  /** Loads the persistent cache once; concurrent callers share the same Map. */
+  private loadCache(): Promise<Map<string, CacheEntry>> {
+    this.cache ??= readFile(this.cachePath, "utf8").then(
+      (text) => new Map(Object.entries(JSON.parse(text) as Record<string, CacheEntry>)),
+      () => new Map<string, CacheEntry>(),
+    );
     return this.cache;
   }
 

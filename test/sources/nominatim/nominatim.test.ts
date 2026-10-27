@@ -51,4 +51,20 @@ describe("Nominatim", () => {
     expect((await nominatim.geocode("Atlantis")).cached).toBe(true);
     expect(fetchFn).toHaveBeenCalledTimes(1);
   });
+
+  it("keeps a path prefix of a self-hosted instance", async () => {
+    const fetchFn = routeFetch({ "/nominatim/search": () => jsonResponse([hamburg]) });
+    const nominatim = new Nominatim({ baseUrl: "https://geo.example/nominatim", userAgent: "t", cacheDir: dir, fetchFn, throttle: new Throttle(0) });
+    expect((await nominatim.geocode("Hamburg")).place?.lat).toBe(53.5503);
+  });
+
+  it("keeps all entries when the first lookups run concurrently", async () => {
+    const fetchFn = routeFetch({ "/search": () => jsonResponse([hamburg]) });
+    const options = { baseUrl: "https://nominatim.example", userAgent: "t", cacheDir: dir, fetchFn, throttle: new Throttle(0) };
+    const nominatim = new Nominatim(options);
+    await Promise.all([nominatim.geocode("Hamburg"), nominatim.geocode("Berlin")]);
+    const fresh = new Nominatim(options);
+    expect((await fresh.geocode("Hamburg")).cached).toBe(true);
+    expect((await fresh.geocode("Berlin")).cached).toBe(true);
+  });
 });
