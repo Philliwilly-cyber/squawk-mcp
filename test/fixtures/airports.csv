@@ -1,0 +1,6 @@
+"id","ident","type","name","latitude_deg","longitude_deg","elevation_ft","continent","iso_country","iso_region","municipality","scheduled_service","icao_code","iata_code","gps_code","local_code","home_link","wikipedia_link","keywords"
+2212,"EDDF","large_airport","Frankfurt am Main Airport",50.036249,8.559294,364,"EU","DE","DE-HE","Frankfurt am Main","yes","EDDF","FRA","EDDF",,"https://www.frankfurt-airport.com/","https://en.wikipedia.org/wiki/Frankfurt_Airport","Rhein-Main"
+2218,"EDDH","large_airport","Hamburg Helmut Schmidt Airport",53.630402,9.98823,53,"EU","DE","DE-HH","Hamburg","yes","EDDH","HAM","EDDH",,,"https://en.wikipedia.org/wiki/Hamburg_Airport",
+323687,"EDDB","large_airport","Berlin Brandenburg Airport",52.351389,13.493889,157,"EU","DE","DE-BR","Berlin","yes","EDDB","BER","EDDB",,,"https://en.wikipedia.org/wiki/Berlin_Brandenburg_Airport",
+2215,"EDDT","closed","Berlin-Tegel Airport (closed)",52.5597,13.2877,122,"EU","DE","DE-BE","Berlin","no",,"TXL","EDDT",,,,
+2216,"EDHI","medium_airport","Hamburg-Finkenwerder Airport",53.535301,9.83554,23,"EU","DE","DE-HH","Hamburg","no","EDHI","XFW","EDHI",,,,
