@@ -73,5 +73,6 @@ describe("OpenSkyClient", () => {
     const error = await client.get("/flights/all", {}, true).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(HttpError);
     expect((error as HttpError).message).toMatch(/quota for \/flights is exhausted.*10 min/);
+    expect(client.credits.get("flights")?.remaining).toBe(0);
   });
 });

@@ -116,6 +116,8 @@ export class OpenSkyClient {
     if (response.status === 429) {
       const retryAfter = parseRetryAfter(response.headers.get("X-Rate-Limit-Retry-After-Seconds"));
       const bucket = bucketForPath(url.pathname.replace(/^\/api/, ""));
+      // The bucket is empty; record that, so later cached answers do not report an old balance.
+      this.credits.record(bucket, 0, this.now());
       const until =
         retryAfter === null ? "" : ` Credits refill in about ${Math.ceil(retryAfter / 60)} min (${toBerlinIso(new Date(this.now() + retryAfter * 1000))}).`;
       throw new HttpError(`OpenSky credit quota for /${bucket} is exhausted (429).${until}`, 429, retryAfter);
