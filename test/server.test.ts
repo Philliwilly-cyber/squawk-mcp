@@ -141,3 +141,17 @@ describe("flights_overhead radius", () => {
     expect((text(allowed)["warnings"] as string[]).some((w) => w.includes("OpenSky credits instead of 1"))).toBe(true);
   });
 });
+
+describe("past flights in anonymous mode", () => {
+  it("are refused before any request, with a hint to configure credentials", async () => {
+    const before = harness.fetchFn.mock.calls.length;
+    const result = await client.callTool({
+      name: "aircraft_flight_history",
+      arguments: { aircraft: "aa8c39", date: "2017-10-04" },
+    });
+    expect(result.isError).toBe(true);
+    expect(text(result)["hint"]).toMatch(/OPENSKY_CLIENT_ID/);
+    const calls = harness.fetchFn.mock.calls.slice(before).map(([url]) => String(url));
+    expect(calls.some((url) => url.includes("/flights/"))).toBe(false);
+  });
+});

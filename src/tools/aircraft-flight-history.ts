@@ -6,7 +6,7 @@ import type { ToolContext } from "./context.js";
 import { aircraftSummary, applyOpenSky, formatFlight } from "./format.js";
 import { NOTE_ADSB_COVERAGE, NOTE_ESTIMATED_AIRPORTS, NOTE_NIGHTLY_BATCH } from "./notes.js";
 import { resolveAircraft } from "./resolve.js";
-import { ToolInputError, jsonResult, runTool } from "./result.js";
+import { ToolInputError, jsonResult, requireAccountForHistory, runTool } from "./result.js";
 
 const MAX_INTERVAL_S = 2 * 86_400;
 
@@ -17,7 +17,8 @@ export function registerAircraftFlightHistory(server: McpServer, ctx: ToolContex
       title: "Past flights of an aircraft",
       description:
         "Flights of one aircraft on a past day (or two), with estimated departure and arrival airports. " +
-        "OpenSky builds this data in a nightly batch, so only yesterday or earlier is available (about 30 credits).",
+        "OpenSky builds this data in a nightly batch, so only yesterday or earlier is available (about 30 credits). " +
+        "Needs OpenSky credentials: anonymous users get no past flights.",
       inputSchema: {
         aircraft: z.string().min(2).describe("Registration (D-AIZZ) or icao24 hex address (3c675a)"),
         date: z
@@ -41,6 +42,7 @@ export function registerAircraftFlightHistory(server: McpServer, ctx: ToolContex
             "Use aircraft_lookup for the live position, or aircraft_track for the current flight.",
           );
         }
+        requireAccountForHistory(ctx.opensky.authMode, "Without an account, aircraft_track shows the current flight.");
         const first = berlinDayRange(addDays(date, 1 - args.days));
         const last = berlinDayRange(date);
         // Around a DST switch two Berlin days can be 49 h long; the API allows 48 h.

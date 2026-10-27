@@ -30,6 +30,16 @@ function errorResult(error: string, hint: string | undefined): CallToolResult {
   };
 }
 
+/** Past flights (/flights/*) are refused by OpenSky for anonymous users; check before spending a request. */
+export function requireAccountForHistory(authMode: "oauth2" | "anonymous", alternative: string): void {
+  if (authMode === "anonymous") {
+    throw new ToolInputError(
+      "OpenSky only serves past flights to registered accounts, and no credentials are configured.",
+      `Create a free API client at https://opensky-network.org/my-opensky/account and set OPENSKY_CLIENT_ID and OPENSKY_CLIENT_SECRET. ${alternative}`,
+    );
+  }
+}
+
 /** Turns thrown errors into readable tool errors instead of protocol errors. */
 export async function runTool(fn: () => Promise<CallToolResult>): Promise<CallToolResult> {
   try {

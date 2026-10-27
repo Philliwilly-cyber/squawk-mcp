@@ -72,6 +72,13 @@ export class OpenSkyClient {
     if (response.status === 404 && notFoundIsEmpty) {
       return { body: null, authMode, warnings };
     }
+    if (response.status === 403 && path.startsWith("/flights") && authMode === "anonymous") {
+      throw new HttpError(
+        "OpenSky only serves past flights to registered accounts (403 in anonymous mode). " +
+          "Set OPENSKY_CLIENT_ID and OPENSKY_CLIENT_SECRET.",
+        403,
+      );
+    }
     if (!response.ok) {
       const detail = (await response.text()).slice(0, 300).trim();
       throw new HttpError(

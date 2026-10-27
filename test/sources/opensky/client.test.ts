@@ -75,4 +75,12 @@ describe("OpenSkyClient", () => {
     expect((error as HttpError).message).toMatch(/quota for \/flights is exhausted.*10 min/);
     expect(client.credits.get("flights")?.remaining).toBe(0);
   });
+
+  it("explains the 403 for past flights in anonymous mode", async () => {
+    const fetchFn = routeFetch({
+      "/api/flights/aircraft": () => jsonResponse("You cannot access historical flights", 403),
+    });
+    const client = new OpenSkyClient({ ...base, fetchFn, tokens: null });
+    await expect(client.get("/flights/aircraft", {}, true)).rejects.toThrow(/only serves past flights to registered accounts/);
+  });
 });

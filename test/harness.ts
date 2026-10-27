@@ -10,7 +10,8 @@ import { Nominatim } from "../src/sources/nominatim/nominatim.js";
 import { OpenSkyClient } from "../src/sources/opensky/client.js";
 import { OpenSkyService } from "../src/sources/opensky/service.js";
 import { AirportSource } from "../src/sources/ourairports/airports.js";
-import { noRetry, routeFetch } from "./helpers.js";
+import { TokenManager } from "../src/sources/opensky/token.js";
+import { jsonResponse, noRetry, routeFetch } from "./helpers.js";
 
 export interface Harness {
   client: Client;
@@ -18,17 +19,27 @@ export interface Harness {
   close: () => Promise<void>;
 }
 
-/** Starts the full server with mocked upstreams and connects an in-memory MCP client. */
-export async function startServer(routes: Parameters<typeof routeFetch>[0], now: Date): Promise<Harness> {
+/**
+ * Starts the full server with mocked upstreams and connects an in-memory MCP client.
+ * With `authenticated`, OAuth2 is configured against a mocked token endpoint.
+ */
+export async function startServer(
+  routes: Parameters<typeof routeFetch>[0],
+  now: Date,
+  options: { authenticated?: boolean } = {},
+): Promise<Harness> {
   const dir = await mkdtemp(join(tmpdir(), "squawk-server-"));
-  const fetchFn = routeFetch(routes);
+  const fetchFn = routeFetch({ "/token": () => jsonResponse({ access_token: "test-token", expires_in: 1800 }), ...routes });
+  const tokens = options.authenticated
+    ? new TokenManager({ clientId: "id", clientSecret: "secret" }, "https://auth.example/token", fetchFn, () => now.getTime())
+    : null;
   const shared = { cacheDir: dir, userAgent: "squawk-mcp/test", fetchFn };
   const opensky = new OpenSkyService(
     new OpenSkyClient({
       baseUrl: "https://opensky.example/api",
       userAgent: "t",
       fetchFn,
-      tokens: null,
+      tokens,
       retry: noRetry,
       now: () => now.getTime(),
     }),
