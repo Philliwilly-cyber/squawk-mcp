@@ -58,3 +58,19 @@ describe("Berlin calendar helpers", () => {
     expect(addDays("2026-03-01", -1)).toBe("2026-02-28");
   });
 });
+
+describe("parseUserTime edge cases", () => {
+  it("reads offset-less times with fractions or hour-only as Berlin time", () => {
+    expect(parseUserTime("2026-10-22T14:00:00.500").toISOString()).toBe("2026-10-22T12:00:00.000Z");
+    expect(parseUserTime("2026-10-22T14").toISOString()).toBe("2026-10-22T12:00:00.000Z");
+  });
+
+  it("accepts explicit offsets", () => {
+    expect(parseUserTime("2026-10-22T14:00:00+01:00").toISOString()).toBe("2026-10-22T13:00:00.000Z");
+  });
+
+  it("rejects input Date.parse would guess at", () => {
+    expect(() => parseUserTime("0")).toThrow(RangeError);
+    expect(() => parseUserTime("Oct 22 2026 14:00")).toThrow(RangeError);
+  });
+});

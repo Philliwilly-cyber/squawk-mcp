@@ -87,12 +87,14 @@ export function berlinDayRange(isoDate: string): { begin: number; end: number } 
 export function parseUserTime(input: string): Date {
   const text = input.trim();
   if (/^\d{9,11}$/.test(text)) return new Date(Number(text) * 1000);
-  const naive = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?$/.exec(text);
-  if (naive) {
-    const [, y, mo, d, h, mi, s] = naive;
+  const match = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2})(?::(\d{2})(?::(\d{2})(?:\.\d+)?)?)?)?(Z|[+-]\d{2}:?\d{2})?$/i.exec(text);
+  if (!match) throw new RangeError(`Could not understand the time "${input}". Use ISO 8601, e.g. 2026-10-22T14:00.`);
+  const [, y, mo, d, h, mi, s, zone] = match;
+  if (zone === undefined) {
     return berlinWallClockToDate(Number(y), Number(mo), Number(d), Number(h ?? 0), Number(mi ?? 0), Number(s ?? 0));
   }
+  // An explicit offset or Z is unambiguous; Date.parse handles it without local-time guessing.
   const parsed = Date.parse(text);
-  if (Number.isNaN(parsed)) throw new RangeError(`Could not understand the time "${input}". Use ISO 8601, e.g. 2026-10-22T14:00.`);
+  if (Number.isNaN(parsed)) throw new RangeError(`Could not understand the time "${input}". Use ISO 8601, e.g. 2026-10-22T14:00Z.`);
   return new Date(parsed);
 }
