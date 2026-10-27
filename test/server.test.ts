@@ -126,3 +126,18 @@ describe("squawk-mcp server", () => {
     expect(first && "text" in first ? first.text : "").toContain("7700");
   });
 });
+
+describe("flights_overhead radius", () => {
+  it("needs allow_large_area when the radius costs more than 1 credit", async () => {
+    const refused = await client.callTool({ name: "flights_overhead", arguments: { lat: 50, lon: 10, radius_km: 250 } });
+    expect(refused.isError).toBe(true);
+    expect(text(refused)["hint"]).toMatch(/allow_large_area/);
+
+    const allowed = await client.callTool({
+      name: "flights_overhead",
+      arguments: { lat: 50, lon: 10, radius_km: 250, allow_large_area: true },
+    });
+    expect(allowed.isError).toBeFalsy();
+    expect((text(allowed)["warnings"] as string[]).some((w) => w.includes("OpenSky credits instead of 1"))).toBe(true);
+  });
+});
