@@ -92,13 +92,17 @@ export function parseTrack(body: unknown): Track | null {
   const b = body as Record<string, unknown>;
   const icao24 = str(b["icao24"]);
   if (icao24 === null) return null;
-  const path = Array.isArray(b["path"]) ? b["path"] : [];
+  const rawPath = Array.isArray(b["path"]) ? b["path"] : [];
+  const path = rawPath.map(parseWaypoint).filter((w): w is Waypoint => w !== null);
+  const startTime = num(b["startTime"]) ?? path[0]?.time ?? null;
+  const endTime = num(b["endTime"]) ?? path.at(-1)?.time ?? null;
+  if (startTime === null || endTime === null) return null;
   return {
     icao24: icao24.toLowerCase(),
-    startTime: num(b["startTime"]) ?? 0,
-    endTime: num(b["endTime"]) ?? 0,
+    startTime,
+    endTime,
     // The API documents the field as "calllsign"; accept both spellings.
     callsign: str(b["callsign"]) ?? str(b["calllsign"]),
-    path: path.map(parseWaypoint).filter((w): w is Waypoint => w !== null),
+    path,
   };
 }

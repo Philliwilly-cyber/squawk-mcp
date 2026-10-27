@@ -33,3 +33,14 @@ describe("OpenSky parsers", () => {
     expect(track?.path[0]?.onGround).toBe(true);
   });
 });
+
+describe("parseTrack without times", () => {
+  it("derives start and end from the waypoints", () => {
+    const track = parseTrack({ icao24: "abc123", path: [[100, 1, 2, 3, 4, false], [200, 1, 2, 3, 4, false]] });
+    expect(track).toMatchObject({ startTime: 100, endTime: 200 });
+  });
+
+  it("returns null when no time is known at all", () => {
+    expect(parseTrack({ icao24: "abc123", path: [] })).toBeNull();
+  });
+});
