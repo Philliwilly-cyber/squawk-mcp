@@ -26,25 +26,38 @@ OpenSky Network, enriched with aircraft metadata, airport data and geocoding.
 
 ```
 src/
-  index.ts            entry point: config, wiring, stdio transport
-  server.ts           MCP server, tool registration
-  config.ts           env parsing (OPENSKY_CLIENT_ID, OPENSKY_CLIENT_SECRET, cache dir, ...)
-  tools/              one file per tool; thin: validate input, call services, format result
+  index.ts            entry point: config, wiring, stdio transport, background dataset loading
+  server.ts           MCP server, tool + resource registration, server instructions
+  config.ts           env parsing (OPENSKY_CLIENT_ID, OPENSKY_CLIENT_SECRET, SQUAWK_CACHE_DIR, URLs), version from package.json
+  tools/              one file per tool; thin: validate input, call sources, format result
+    context.ts        ToolContext passed to every tool
+    format.ts         state vector / flight formatting, envelope wiring for OpenSky and the aircraft DB
+    resolve.ts        place -> coordinates, registration -> icao24, code/name -> airport
+    live.ts           shared live-states query used by several tools
+    notes.ts          coverage note texts
+    result.ts         JSON results, readable tool errors (ToolInputError, runTool)
   sources/
-    opensky/          REST client, OAuth2 token manager, credit tracking, response parsing
-    aircraft-db/      OpenSky aircraft database CSV: download, local cache, index by icao24/registration
-    ourairports/      OurAirports CSV: download, local cache, index by ICAO/IATA/name
+    opensky/          token.ts (OAuth2), client.ts (HTTP, auth, credits, retries), service.ts (cache, validation),
+                      credits.ts (tariff + balance), parse.ts, types.ts
+    aircraft-db/      OpenSky aircraft database CSV: download, local cache, compact index by icao24/registration
+    ourairports/      OurAirports CSV: download, local cache, index by ICAO/IATA/ident/name
     nominatim/        geocoding with 1 req/s throttle, User-Agent, persistent cache
   core/
-    cache.ts          TTL cache, stale-on-error fallback
-    dedupe.ts         in-flight request coalescing (identical requests share one promise)
-    retry.ts          backoff for 429/5xx, honours X-Rate-Limit-Retry-After-Seconds
-    envelope.ts       common result envelope (see below)
+    cache.ts          TTL cache with in-flight coalescing and stale-on-error fallback
+    retry.ts          backoff for 429/5xx, honours retry-after, gives up on long waits
+    http.ts           HttpError, fetch with timeout
+    envelope.ts       common result envelope (see below), attribution texts
+    dataset.ts        background-loading dataset with bounded waits
+    files.ts          download-to-cache with atomic replace and old-copy fallback
+    csv.ts            streaming CSV parser (configurable quote char)
+    throttle.ts       serial throttle (Nominatim)
     units.ts          m/ft, m/s -> km/h and kn, ft/min
-    time.ts           Europe/Berlin formatting with offset
+    time.ts           Europe/Berlin formatting with offset, Berlin days, user time parsing
     squawk.ts         squawk code explanations
-    geo.ts            bounding boxes, distance, bbox area in sq°
-test/                 Vitest, mirrors src/; fixtures are recorded API responses
+    geo.ts            bounding boxes, distance, bearing, bbox area in sq°
+    log.ts            stderr logging
+test/                 Vitest, mirrors src/; fixtures follow the documented API examples
+                      (no live recordings yet); server.test.ts drives the server via an in-memory MCP client
 ```
 
 Layering: `tools -> sources -> core`. Tools never call `fetch` directly.
@@ -102,9 +115,9 @@ Endpoints used:
 | `GET /states/own` | own receivers | auth required, no credit cost; not used by default |
 | `GET /flights/all` | flights in `[begin, end]` | interval max 2 h |
 | `GET /flights/aircraft` | flights of one aircraft | interval max 2 days, nightly batch |
-| `GET /flights/arrival` | arrivals at an airport (ICAO) | interval max 2 days, nightly batch |
-| `GET /flights/departure` | departures from an airport (ICAO) | doc says "must cover more than two days" - almost certainly a typo for "not more than"; treat as max 2 days, verify |
-| `GET /tracks` | trajectory of one aircraft | experimental, may be down at any time; `time=0` = live track; max 30 days back. Doc example uses `/tracks/all` - verify which path works |
+| `GET /flights/arrival` | arrivals at an airport (ICAO) | nightly batch; begin/end may span at most one UTC day boundary (official Python client) |
+| `GET /flights/departure` | departures from an airport (ICAO) | same as arrival. The doc's "must cover more than two days" is a typo; the official client enforces the one-boundary rule |
+| `GET /tracks/all` | trajectory of one aircraft | experimental, may be down at any time; `time=0` = live track; max 30 days back. The doc heading says `/tracks`, its example and the official client use `/tracks/all` |
 
 `/flights/*` return `404` with empty body when nothing was found; that is "no
 data", not an error.
@@ -189,10 +202,17 @@ Unclear in the docs, to be measured via `X-Rate-Limit-Remaining`: whether an
 ### OpenSky Aircraft Database (CSV)
 
 Type, manufacturer, operator, registration by icao24. Download once, cache
-locally (e.g. `~/.cache/squawk-mcp/`), refresh at most monthly. Large file:
-stream-parse, index icao24 and registration. Exact current download URL and
-licence must be verified before implementation. Missing entries are normal;
+locally (`~/.cache/squawk-mcp/`), refresh at most monthly. Large file:
+stream-parse, index icao24 and registration. Missing entries are normal;
 say "not in database" rather than guessing.
+
+- Default URL `https://s3.opensky-network.org/data-samples/metadata/aircraftDatabase.csv`
+  is the long-standing location but **not verified** against the current site
+  (it was unreachable from the dev environment); override with `SQUAWK_AIRCRAFT_DB_URL`.
+  Licence also still to be checked.
+- Two export formats exist: classic lowercase headers with double quotes, and
+  newer camelCase headers quoted with single quotes. Both are supported.
+- The `owner` column is never read: for private aircraft it often names a person.
 
 ### OurAirports (CSV, public domain)
 
@@ -232,3 +252,5 @@ Usage policy: https://operations.osmfoundation.org/policies/nominatim/
 - The version number lives only in `package.json`. Read it from there at
   runtime; never hard-code it elsewhere (docs, User-Agent, server info).
 - Never log secrets or tokens. Logs go to stderr (stdout is the MCP channel).
+- TypeScript stays on 6.0.x until typescript-eslint supports 7.x.
+- `npm run check` (typecheck, lint, tests) must pass before every push; CI runs it on Node 22 and 24.
