@@ -1,8 +1,9 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { BoundingBox } from "../../core/geo.js";
-import { type FetchLike, HttpError, fetchWithTimeout } from "../../core/http.js";
+import { type FetchLike, HttpError, fetchWithTimeout, parseRetryAfter } from "../../core/http.js";
 import { logWarn } from "../../core/log.js";
+import { type RetryOptions, withRetry } from "../../core/retry.js";
 import { Throttle } from "../../core/throttle.js";
 
 export interface Place {
@@ -33,9 +34,12 @@ export interface NominatimOptions {
   fetchFn: FetchLike;
   now?: () => number;
   throttle?: Throttle;
+  retry?: RetryOptions;
 }
 
 const CACHE_TTL_MS = 30 * 24 * 60 * 60_000;
+/** A few slow retries on 429/5xx; giving up after ~10 s is better than hammering a volunteer service. */
+const NOMINATIM_RETRY: RetryOptions = { retries: 2, baseDelayMs: 2_000, maxDelayMs: 5_000, maxTotalWaitMs: 10_000 };
 const MAX_CACHE_ENTRIES = 5_000;
 
 const normalizeQuery = (query: string): string => query.trim().replace(/\s+/g, " ").toLowerCase();
@@ -71,8 +75,9 @@ export class Nominatim {
     const pending = this.inFlight.get(key);
     if (pending) return pending;
 
+    // Retries stay inside the throttle, so they never exceed one request per second either.
     const promise = this.throttle
-      .run(() => this.request(query))
+      .run(() => withRetry(() => this.request(query), this.options.retry ?? NOMINATIM_RETRY))
       .then(async (place) => {
         const storedAt = this.now();
         cache.set(key, { place, storedAt });
@@ -97,6 +102,13 @@ export class Nominatim {
       { headers: { "User-Agent": this.options.userAgent, "Accept-Language": "en,de" } },
       15_000,
     );
+    if (response.status === 429) {
+      throw new HttpError(
+        "Nominatim (OpenStreetMap geocoding) is rate-limiting requests from this IP (429).",
+        429,
+        parseRetryAfter(response.headers.get("Retry-After")),
+      );
+    }
     if (!response.ok) {
       throw new HttpError(`Nominatim answered ${response.status}`, response.status);
     }

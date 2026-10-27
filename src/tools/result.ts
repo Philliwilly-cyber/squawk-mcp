@@ -1,6 +1,7 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { HttpError } from "../core/http.js";
 import { toBerlinIso } from "../core/time.js";
+import { QuotaExhaustedError } from "../sources/opensky/client.js";
 import { InvalidRequestError } from "../sources/opensky/service.js";
 
 /** An error caused by the tool input, with a hint how to fix it. */
@@ -49,9 +50,11 @@ export async function runTool(fn: () => Promise<CallToolResult>): Promise<CallTo
     if (error instanceof InvalidRequestError || error instanceof RangeError) return errorResult(error.message, undefined);
     if (error instanceof HttpError) {
       const hint =
-        error.status === 429
+        error instanceof QuotaExhaustedError
           ? "The daily OpenSky credits for this endpoint are used up. Cached answers still work; try again after the refill."
-          : error.status === 0 || error.status >= 500
+          : error.status === 429
+            ? "The service is rate-limiting requests from this IP. Try again in a minute."
+            : error.status === 0 || error.status >= 500
             ? "The upstream service is unreachable or overloaded. Try again in a minute."
             : undefined;
       return errorResult(error.message, hint);

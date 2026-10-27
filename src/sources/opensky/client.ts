@@ -7,6 +7,14 @@ import { AuthError, type TokenManager } from "./token.js";
 
 export type OpenSkyAuthMode = "oauth2" | "anonymous";
 
+/** OpenSky answered 429: the daily credits of one endpoint group are used up. */
+export class QuotaExhaustedError extends HttpError {
+  constructor(message: string, retryAfterSeconds: number | null) {
+    super(message, 429, retryAfterSeconds);
+    this.name = "QuotaExhaustedError";
+  }
+}
+
 export type QueryValue = string | number | readonly (string | number)[] | undefined;
 
 export interface OpenSkyResponse {
@@ -127,7 +135,7 @@ export class OpenSkyClient {
       this.credits.record(bucket, 0, this.now());
       const until =
         retryAfter === null ? "" : ` Credits refill in about ${Math.ceil(retryAfter / 60)} min (${toBerlinIso(new Date(this.now() + retryAfter * 1000))}).`;
-      throw new HttpError(`OpenSky credit quota for /${bucket} is exhausted (429).${until}`, 429, retryAfter);
+      throw new QuotaExhaustedError(`OpenSky credit quota for /${bucket} is exhausted (429).${until}`, retryAfter);
     }
     if (response.status >= 500) {
       throw new HttpError(`OpenSky answered ${response.status}`, response.status);

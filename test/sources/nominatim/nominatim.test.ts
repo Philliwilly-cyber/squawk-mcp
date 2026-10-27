@@ -67,4 +67,32 @@ describe("Nominatim", () => {
     expect((await fresh.geocode("Hamburg")).cached).toBe(true);
     expect((await fresh.geocode("Berlin")).cached).toBe(true);
   });
+
+  it("retries a 429 a few times, slowly", async () => {
+    let calls = 0;
+    const fetchFn = routeFetch({
+      "/search": () => (++calls < 3 ? new Response("", { status: 429 }) : jsonResponse([hamburg])),
+    });
+    const sleeps: number[] = [];
+    const nominatim = new Nominatim({
+      baseUrl: "https://nominatim.example",
+      userAgent: "t",
+      cacheDir: dir,
+      fetchFn,
+      throttle: new Throttle(0),
+      retry: {
+        retries: 2,
+        baseDelayMs: 2_000,
+        maxDelayMs: 5_000,
+        maxTotalWaitMs: 10_000,
+        random: () => 1,
+        sleep: (ms) => {
+          sleeps.push(ms);
+          return Promise.resolve();
+        },
+      },
+    });
+    expect((await nominatim.geocode("Hamburg")).place?.lat).toBe(53.5503);
+    expect(sleeps).toEqual([2_000, 4_000]);
+  });
 });

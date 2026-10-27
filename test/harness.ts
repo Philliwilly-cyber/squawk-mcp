@@ -49,7 +49,7 @@ export async function startServer(
     opensky,
     aircraftDb: new AircraftDatabase({ ...shared, url: "https://data.example/aircraft.csv" }),
     airports: new AirportSource({ ...shared, url: "https://data.example/airports.csv" }),
-    geocoder: new Nominatim({ ...shared, baseUrl: "https://nominatim.example", throttle: new Throttle(0) }),
+    geocoder: new Nominatim({ ...shared, baseUrl: "https://nominatim.example", throttle: new Throttle(0), retry: noRetry }),
     clock: () => now,
     version: "0.0.0-test",
     cacheDir: dir,
