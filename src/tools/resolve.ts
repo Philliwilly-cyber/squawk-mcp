@@ -53,23 +53,29 @@ export interface ResolvedAircraft {
 
 const HEX_ICAO = /^[0-9a-fA-F]{6}$/;
 
-/** Resolves an icao24 address or registration (via the aircraft database) to an icao24. */
+/**
+ * Resolves an icao24 address or registration (via the aircraft database) to an icao24.
+ * `kind` forces one interpretation; by default a known registration wins over a hex address.
+ */
 export async function resolveAircraft(
   ctx: ToolContext,
   builder: EnvelopeBuilder,
   query: string,
-  waitMs = 20_000,
+  kind: "auto" | "registration" | "icao24" = "auto",
 ): Promise<ResolvedAircraft> {
   const text = query.trim();
   const isHex = HEX_ICAO.test(text);
+  if (kind === "icao24" && !isHex) {
+    throw new ToolInputError(`"${query}" is not a 24-bit ICAO address.`, "An icao24 address has 6 hex digits, e.g. 3c675a.");
+  }
   // A hex address needs no database, so wait only briefly in that case.
-  const index = applyAircraftDb(builder, await ctx.aircraftDb.get(isHex ? 2_000 : waitMs));
+  const index = applyAircraftDb(builder, await ctx.aircraftDb.get(isHex && kind !== "registration" ? 2_000 : 20_000));
 
-  const byRegistration = index?.byRegistrationMark(text);
-  if (byRegistration && !(isHex && index?.byIcao24(text))) {
+  const byRegistration = kind === "icao24" ? undefined : index?.byRegistrationMark(text);
+  if (byRegistration && !(kind === "auto" && isHex && index?.byIcao24(text))) {
     return { icao24: byRegistration.icao24, info: byRegistration, index, matchedBy: "registration" };
   }
-  if (isHex) {
+  if (isHex && kind !== "registration") {
     const icao24 = text.toLowerCase();
     return { icao24, info: index?.byIcao24(icao24), index, matchedBy: "icao24" };
   }

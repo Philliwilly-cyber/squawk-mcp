@@ -5,7 +5,7 @@ import type { BoundingBox } from "../core/geo.js";
 import { toUnixSeconds } from "../core/time.js";
 import type { ToolContext } from "./context.js";
 import { AREA_SCHEMA, resolveArea } from "./flights-in-area.js";
-import { addSquawkWarnings, aircraftSummary, applyAircraftDb, applyOpenSky, formatState } from "./format.js";
+import { addSquawkWarnings, aircraftSummary, applyOpenSky, formatState } from "./format.js";
 import { liveStates } from "./live.js";
 import { NOTE_ADSB_COVERAGE, NOTE_MILITARY } from "./notes.js";
 import { resolveAircraft } from "./resolve.js";
@@ -42,8 +42,14 @@ export function registerAircraftLookup(server: McpServer, ctx: ToolContext): voi
         let kind = args.kind;
         if (kind === "auto") {
           const dbState = await ctx.aircraftDb.get(HEX.test(text) ? 2_000 : 20_000);
-          const knownRegistration = dbState.status === "ready" && dbState.data.byRegistrationMark(text) !== undefined;
-          kind = knownRegistration ? "registration" : HEX.test(text) ? "icao24" : "callsign";
+          if (dbState.status === "ready") {
+            const knownRegistration = dbState.data.byRegistrationMark(text) !== undefined;
+            kind = knownRegistration ? "registration" : HEX.test(text) ? "icao24" : "callsign";
+          } else {
+            // Without the database, a hyphen is the best hint for a registration (D-AIZZ, G-EUPT);
+            // callsigns never contain one. resolveAircraft then explains what is missing.
+            kind = HEX.test(text) ? "icao24" : text.includes("-") ? "registration" : "callsign";
+          }
         }
 
         if (kind === "callsign") {
@@ -69,12 +75,15 @@ export function registerAircraftLookup(server: McpServer, ctx: ToolContext): voi
             filter: (s) => s.callsign !== null && normalizeCallsign(s.callsign) === callsign,
           });
           if (live["count"] === 0) {
-            builder.note(`No live aircraft with callsign ${callsign} in ${areaName}. It may not be flying, or be outside coverage.`);
+            builder.note(
+              `No live aircraft with callsign ${callsign} in ${areaName}. It may not be flying, or be outside coverage. ` +
+                'If this is a registration, retry with kind "registration".',
+            );
           }
           return jsonResult(builder.build({ query: text, matched_by: "callsign", area: areaName, ...live }));
         }
 
-        const resolved = await resolveAircraft(ctx, builder, text);
+        const resolved = await resolveAircraft(ctx, builder, text, kind);
         const data: Record<string, unknown> = {
           query: text,
           matched_by: resolved.matchedBy,
@@ -95,8 +104,6 @@ export function registerAircraftLookup(server: McpServer, ctx: ToolContext): voi
           data["live"] = state
             ? formatState(state, { aircraft: undefined, nowS: toUnixSeconds(ctx.clock()) })
             : "Not currently seen by OpenSky (on the ground with transponder off, outside coverage, or not transmitting).";
-        } else {
-          applyAircraftDb(builder, await ctx.aircraftDb.get(0));
         }
         return jsonResult(builder.build(data));
       }),
