@@ -18,6 +18,14 @@ describe("AirportIndex", () => {
     expect(index.search("Berlin").map((a) => a.ident)).toEqual(["EDDB"]);
   });
 
+  it("ranks a large airport above a heliport with an exact city match", () => {
+    expect(index.search("Frankfurt").map((a) => a.ident)).toEqual(["EDDF", "DE-0922"]);
+  });
+
+  it("finds airports by their local name in keywords", () => {
+    expect(index.search("München")[0]?.ident).toBe("EDDM");
+  });
+
   it("finds the nearest large airports", () => {
     expect(index.nearest({ lat: 52.52, lon: 13.4 }, 1)[0]?.ident).toBe("EDDB");
   });

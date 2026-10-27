@@ -1,5 +1,6 @@
 import { type EnvelopeBuilder, OSM_ATTRIBUTION, OURAIRPORTS_ATTRIBUTION } from "../core/envelope.js";
 import type { BoundingBox, Coordinates } from "../core/geo.js";
+import { HttpError } from "../core/http.js";
 import type { AircraftIndex, AircraftInfo } from "../sources/aircraft-db/aircraft-db.js";
 import type { Airport } from "../sources/ourairports/airports.js";
 import type { ToolContext } from "./context.js";
@@ -32,7 +33,16 @@ export async function resolveLocation(
   if (!input.place?.trim()) {
     throw new ToolInputError("Give a place name (e.g. \"Hamburg\") or coordinates (lat and lon).");
   }
-  const result = await ctx.geocoder.geocode(input.place);
+  let result;
+  try {
+    result = await ctx.geocoder.geocode(input.place);
+  } catch (error) {
+    if (!(error instanceof HttpError)) throw error;
+    throw new ToolInputError(
+      `Could not look up "${input.place}": ${error.message}`,
+      "Try again in a minute, or give coordinates (lat and lon) instead of a place name.",
+    );
+  }
   builder.source(`Nominatim (OpenStreetMap)${result.cached ? ", cached" : ""}`).attribute(OSM_ATTRIBUTION);
   if (!result.place) {
     throw new ToolInputError(`Nominatim found no place called "${input.place}".`, "Try a more specific name or coordinates.");

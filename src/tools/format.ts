@@ -12,7 +12,11 @@ import { NOTE_DISCRETE_SQUAWK, NOTE_SQUAWK } from "./notes.js";
 
 export function aircraftSummary(info: AircraftInfo | undefined): Record<string, string | null> | null {
   if (!info) return null;
-  const type = [info.manufacturer, info.model].filter(Boolean).join(" ") || null;
+  // Some models already start with the manufacturer ("Airbus" + "Airbus A320 214SL").
+  const model = info.model ?? "";
+  const manufacturer = info.manufacturer ?? "";
+  const repeats = manufacturer !== "" && model.toLowerCase().startsWith(manufacturer.split(" ")[0]?.toLowerCase() ?? "");
+  const type = (repeats ? model : [manufacturer, model].filter(Boolean).join(" ")) || null;
   return {
     registration: info.registration,
     type,

@@ -16,7 +16,13 @@ type Direction = "arrival" | "departure";
 
 function phase(state: StateVector, fieldElevationM: number): string {
   if (state.onGround) return "on ground";
-  const height = state.baroAltitude === null ? null : state.baroAltitude - fieldElevationM;
+  // Barometric altitude refers to standard pressure (1013 hPa) and can be off from the real
+  // height by more than 100 m on a high- or low-pressure day; prefer the geometric (GPS) altitude.
+  const altitudeM = state.geoAltitude ?? state.baroAltitude;
+  const height = altitudeM === null ? null : altitudeM - fieldElevationM;
+  // Airborne but barely above the field: rotating or about to touch down; the vertical rate
+  // is often near zero there, so it cannot tell the two apart.
+  if (height !== null && height < 150) return "just above the ground: taking off or landing";
   if (height !== null && height < 1_500 && state.verticalRate !== null) {
     if (state.verticalRate < -1) return "likely approaching / landing";
     if (state.verticalRate > 1) return "likely departing / climbing";
@@ -72,7 +78,9 @@ export function registerAirportTraffic(server: McpServer, ctx: ToolContext): voi
             const state = live.shown[i];
             return { ...a, phase: state ? phase(state, elevationM) : null };
           });
-          builder.note("The phase is a guess from altitude and vertical rate near the airport, not ATC data.");
+          builder.note(
+            "The phase is a guess from altitude (geometric where available) and vertical rate near the airport, not ATC data.",
+          );
           return jsonResult(builder.build({ airport: airportInfo, radius_km: args.radius_km, ...live.data, aircraft }));
         }
 
