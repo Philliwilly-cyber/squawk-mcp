@@ -59,8 +59,8 @@ src/
     squawk.ts         squawk code explanations
     geo.ts            bounding boxes, distance, bearing, bbox area in sq°
     log.ts            stderr logging
-test/                 Vitest, mirrors src/; fixtures follow the documented API examples
-                      (no live recordings yet); server.test.ts drives the server via an in-memory MCP client
+test/                 Vitest, mirrors src/; fixtures/ follow the documented API examples, fixtures/live/
+                      holds recorded real responses; harness.ts drives the server via an in-memory MCP client
 ```
 
 Layering: `tools -> sources -> core`. Tools never call `fetch` directly.
@@ -173,8 +173,21 @@ Headers: `X-Rate-Limit-Remaining` (balance), on `429`
 `X-Rate-Limit-Retry-After-Seconds`. Track the last seen balance per bucket and
 surface it (low balance -> warning).
 
-Unclear in the docs, to be measured via `X-Rate-Limit-Remaining`: whether an
-`icao24`-only `/states/all` query is billed as global (4) or cheaper.
+Measured live (2026-10-27, `npm run live-check`): a box <= 25 sq° costs 1, an
+`icao24`-only `/states/all` query costs 4 (billed as global), a live track costs 4.
+
+### Verified behaviour (live check, 2026-10-27)
+
+- Anonymous users get `403 "You cannot access historical flights"` from all
+  `/flights/*` endpoints. History tools refuse up front in anonymous mode.
+- `/tracks/all?time=0` works anonymously.
+- State vector rows have 18 fields with `extended=1`; `category` is 0 for
+  nearly all aircraft, so 0 and 1 are reported as null.
+- Track waypoints can show `baro_altitude` 0 for low-flying helicopters that
+  are airborne (seen with a rescue helicopter at ~170 m). It is the API's
+  value; don't "correct" it.
+- Node's built-in `fetch` ignores `HTTPS_PROXY`; behind a proxy run with
+  `NODE_USE_ENV_PROXY=1` (Node >= 22.21).
 
 ### Quota rules
 
@@ -210,10 +223,10 @@ locally (`~/.cache/squawk-mcp/`), refresh at most monthly. Large file:
 stream-parse, index icao24 and registration. Missing entries are normal;
 say "not in database" rather than guessing.
 
-- Default URL `https://s3.opensky-network.org/data-samples/metadata/aircraftDatabase.csv`
-  is the long-standing location but **not verified** against the current site
-  (it was unreachable from the dev environment); override with `SQUAWK_AIRCRAFT_DB_URL`.
-  Licence also still to be checked.
+- Default URL `https://s3.opensky-network.org/data-samples/metadata/aircraftDatabase.csv`,
+  verified 2026-10-27: about 95 MB, 519,969 aircraft, classic format. Override with
+  `SQUAWK_AIRCRAFT_DB_URL`. Licence still to be checked (the terms page was not
+  reachable from the dev environment).
 - Two export formats exist: classic lowercase headers with double quotes, and
   newer camelCase headers quoted with single quotes. Both are supported.
 - The `owner` column is never read: for private aircraft it often names a person.

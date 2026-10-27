@@ -22,10 +22,10 @@ squawk-mcp says so instead of guessing.
 |---|---|---|
 | `flights_overhead` | Live aircraft around a place or coordinates, nearest first, with distance and direction | usually 1 |
 | `flights_in_area` | Live aircraft in a bounding box or named region | 1 (larger areas 2-4, opt-in) |
-| `aircraft_lookup` | Aircraft by registration, icao24 or callsign: type, operator, live position | 0-4 |
+| `aircraft_lookup` | Aircraft by registration, icao24 or callsign: type, operator, live position | 4 with live position (measured), 0 without |
 | `aircraft_track` | Trajectory of the current flight or one in the last 30 days (experimental endpoint) | ~4 |
-| `aircraft_flight_history` | Flights of an aircraft on a past day | ~30 |
-| `airport_traffic` | Past arrivals/departures, or aircraft around the airport right now | ~30 per direction / 1 |
+| `aircraft_flight_history` | Flights of an aircraft on a past day (needs an account) | ~30 |
+| `airport_traffic` | Past arrivals/departures (needs an account), or aircraft around the airport right now | ~30 per direction / 1 |
 | `airport_info` | Airports by code, name or city, or nearest to a place | 0 |
 | `emergency_squawks` | Aircraft squawking 7500 / 7600 / 7700 in a region or worldwide | 1-4 |
 | `explain_squawk` | Plain-language explanation of a squawk code | 0 |
@@ -71,7 +71,8 @@ npm run build
 ### OpenSky credentials (recommended)
 
 Without credentials squawk-mcp runs in anonymous mode: 400 credits per day shared by your IP, latest data only,
-10 s resolution. With an account you get 4,000 credits per endpoint group per day and 5 s resolution.
+10 s resolution, and **no past flights** (`aircraft_flight_history` and the history mode of `airport_traffic` need an
+account). With an account you get 4,000 credits per endpoint group per day and 5 s resolution.
 
 1. Log in at [opensky-network.org](https://opensky-network.org) and open
    [Account](https://opensky-network.org/my-opensky/account).
@@ -98,6 +99,11 @@ squawk-mcp uses the OAuth2 client-credentials flow, caches the token and refresh
 ```
 
 With Claude Code: `claude mcp add squawk -e OPENSKY_CLIENT_ID=... -e OPENSKY_CLIENT_SECRET=... -- node /path/to/squawk-mcp/dist/index.js`
+
+### Behind a proxy
+
+Node's built-in `fetch` does not read `HTTPS_PROXY` on its own. Behind a proxy, start the server with
+`NODE_USE_ENV_PROXY=1` (Node 22.21 or newer), e.g. in the `env` block of the MCP configuration.
 
 ### Environment variables
 
