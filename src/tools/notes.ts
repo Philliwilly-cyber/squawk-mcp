@@ -22,3 +22,7 @@ export const NOTE_TRACKS_EXPERIMENTAL =
 
 export const NOTE_SQUAWK =
   "A squawk is the code the transponder sends. Emergency codes (7500, 7600, 7700) are not a confirmed situation.";
+
+export const NOTE_DISCRETE_SQUAWK =
+  "\"Discrete code assigned by ATC\" means air traffic control gave the flight an individual code to identify it on radar; " +
+  "the code itself carries no special meaning. explain_squawk explains any code in detail.";

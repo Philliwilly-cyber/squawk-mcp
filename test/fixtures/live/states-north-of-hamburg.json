@@ -1,0 +1,53 @@
+{
+  "url": "https://opensky-network.org/api/states/all?lamin=54.19084763000359&lomin=9.381780697013777&lamax=54.909496569996406&lomax=10.620852302986222&extended=1",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "x-rate-limit-remaining": "385"
+  },
+  "body": {
+    "time": 1793093715,
+    "states": [
+      [
+        "3e0fef",
+        "CHX42   ",
+        "Germany",
+        1793093715,
+        1793093715,
+        9.6594,
+        54.2798,
+        236.22,
+        false,
+        62.92,
+        29.92,
+        -0.33,
+        null,
+        281.94,
+        "0020",
+        false,
+        0,
+        0
+      ],
+      [
+        "3d172a",
+        "DEHAG   ",
+        "Germany",
+        1793093715,
+        1793093715,
+        10.0736,
+        54.3752,
+        495.3,
+        false,
+        56.09,
+        262.09,
+        6.83,
+        null,
+        541.02,
+        null,
+        false,
+        0,
+        0
+      ]
+    ]
+  }
+}

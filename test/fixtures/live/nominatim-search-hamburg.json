@@ -1,0 +1,30 @@
+{
+  "url": "https://nominatim.openstreetmap.org/search?q=Hamburg&format=jsonv2&limit=1",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json; charset=utf-8"
+  },
+  "body": [
+    {
+      "place_id": 142709226,
+      "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+      "osm_type": "relation",
+      "osm_id": 62782,
+      "lat": "53.5501721",
+      "lon": "10.0013165",
+      "category": "boundary",
+      "type": "administrative",
+      "place_rank": 8,
+      "importance": 0.7877290162608149,
+      "addresstype": "city",
+      "name": "Hamburg",
+      "display_name": "Hamburg, Germany",
+      "boundingbox": [
+        "53.3951118",
+        "54.0276500",
+        "8.1044993",
+        "10.3252805"
+      ]
+    }
+  ]
+}

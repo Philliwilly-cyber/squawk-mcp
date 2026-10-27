@@ -28,6 +28,7 @@ beforeAll(async () => {
       "/aircraft.csv": () => new Response("icao24,registration\n"),
     },
     NOW,
+    { authenticated: true },
   );
 });
 

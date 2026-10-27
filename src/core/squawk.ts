@@ -78,6 +78,13 @@ const KNOWN: Readonly<Record<string, KnownCode>> = {
       "Set when an aircraft enters radar-controlled airspace without an assigned code, e.g. coming from oceanic airspace. " +
       "In some countries it is also the IFR default.",
   },
+  "0020": {
+    category: "special",
+    label: "Air rescue helicopter (Germany)",
+    meaning:
+      "In Germany, 0020 is allocated to helicopter emergency medical services (HEMS), such as the \"Christoph\" " +
+      "rescue helicopters. Other countries may assign it differently.",
+  },
   "1000": {
     category: "conspicuity",
     label: "Mode S conspicuity code",

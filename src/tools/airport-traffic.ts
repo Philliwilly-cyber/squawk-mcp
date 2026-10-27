@@ -10,7 +10,7 @@ import { applyAircraftDb, applyOpenSky, formatFlight } from "./format.js";
 import { liveStates } from "./live.js";
 import { NOTE_ADSB_COVERAGE, NOTE_ESTIMATED_AIRPORTS, NOTE_NIGHTLY_BATCH } from "./notes.js";
 import { resolveAirport } from "./resolve.js";
-import { ToolInputError, jsonResult, runTool } from "./result.js";
+import { ToolInputError, jsonResult, requireAccountForHistory, runTool } from "./result.js";
 
 type Direction = "arrival" | "departure";
 
@@ -31,7 +31,7 @@ export function registerAirportTraffic(server: McpServer, ctx: ToolContext): voi
       title: "Airport arrivals and departures",
       description:
         "mode=history: arrivals and/or departures at an airport on a past day (nightly OpenSky batch, yesterday or earlier, " +
-        "about 30 credits per direction). mode=live_nearby: aircraft around the airport right now, with an estimated phase " +
+        "about 30 credits per direction; needs OpenSky credentials). mode=live_nearby: aircraft around the airport right now, with an estimated phase " +
         "(on ground, approaching, departing), 1 credit.",
       inputSchema: {
         airport: z.string().min(3).describe("ICAO (EDDF), IATA (FRA) or airport name"),
@@ -84,6 +84,7 @@ export function registerAirportTraffic(server: McpServer, ctx: ToolContext): voi
             'Use mode "live_nearby" to see what is around the airport right now.',
           );
         }
+        requireAccountForHistory(ctx.opensky.authMode, 'Without an account, mode "live_nearby" still works.');
         const { begin, end } = berlinDayRange(date);
         const directions: Direction[] =
           args.direction === "both" ? ["arrival", "departure"] : [args.direction === "arrivals" ? "arrival" : "departure"];
