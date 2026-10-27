@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { EnvelopeBuilder } from "../core/envelope.js";
-import { explainSquawk } from "../core/squawk.js";
+import { EMERGENCY_CAVEAT, explainSquawk } from "../core/squawk.js";
 import type { ToolContext } from "./context.js";
 import { NOTE_SQUAWK } from "./notes.js";
 import { jsonResult, runTool } from "./result.js";
@@ -21,7 +21,11 @@ export function registerExplainSquawk(server: McpServer, ctx: ToolContext): void
       runTool(() => {
         const builder = new EnvelopeBuilder(ctx.clock()).source("squawk-mcp built-in squawk reference").note(NOTE_SQUAWK);
         builder.note("Some countries allocate further special codes; only internationally common ones are explained specifically.");
-        return Promise.resolve(jsonResult(builder.build(explainSquawk(args.code))));
+        const info = explainSquawk(args.code);
+        if (info.category === "emergency") {
+          builder.warn(`${info.code} is an emergency code (${info.label}). ${EMERGENCY_CAVEAT}`);
+        }
+        return Promise.resolve(jsonResult(builder.build(info)));
       }),
   );
 }

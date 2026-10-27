@@ -117,6 +117,7 @@ describe("squawk-mcp server", () => {
   it("explains a squawk offline", async () => {
     const result = text(await client.callTool({ name: "explain_squawk", arguments: { code: "7600" } }));
     expect(result["data"]).toMatchObject({ code: "7600", category: "emergency", label: "Radio communication failure" });
+    expect((result["warnings"] as string[])[0]).toMatch(/7600 is an emergency code/);
   });
 
   it("refuses today's airport history with a hint to the live mode", async () => {
