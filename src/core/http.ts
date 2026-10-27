@@ -23,6 +23,14 @@ export function parseRetryAfter(value: string | null): number | null {
   return Number.isFinite(seconds) && seconds >= 0 ? seconds : null;
 }
 
+/** Error message including the cause, since fetch reports only "fetch failed" on its own. */
+function describeError(error: unknown): string {
+  if (!(error instanceof Error)) return String(error);
+  if (error.name === "TimeoutError") return "timed out";
+  const cause = error.cause instanceof Error ? error.cause.message : undefined;
+  return cause ? `${error.message} (${cause})` : error.message;
+}
+
 /** Wraps fetch with a timeout and turns network failures into HttpError(status 0). */
 export async function fetchWithTimeout(
   fetchFn: FetchLike,
@@ -33,7 +41,6 @@ export async function fetchWithTimeout(
   try {
     return await fetchFn(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
   } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error);
-    throw new HttpError(`Request to ${new URL(url).host} failed: ${reason}`, 0);
+    throw new HttpError(`Request to ${new URL(url).host} failed: ${describeError(error)}`, 0);
   }
 }

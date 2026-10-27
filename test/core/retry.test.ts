@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { HttpError } from "../../src/core/http.js";
+import { HttpError, fetchWithTimeout } from "../../src/core/http.js";
 import { withRetry } from "../../src/core/retry.js";
 
 const options = {
@@ -40,5 +40,14 @@ describe("withRetry", () => {
     const fn = vi.fn().mockRejectedValue(new HttpError("bad", 400));
     await expect(withRetry(fn, options)).rejects.toThrow("bad");
     expect(fn).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("fetchWithTimeout", () => {
+  it("includes the cause of network errors", async () => {
+    const fetchFn = () => Promise.reject(new TypeError("fetch failed", { cause: new Error("getaddrinfo ENOTFOUND x") }));
+    await expect(fetchWithTimeout(fetchFn, "https://x.example/", {}, 1000)).rejects.toThrow(
+      "Request to x.example failed: fetch failed (getaddrinfo ENOTFOUND x)",
+    );
   });
 });
