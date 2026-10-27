@@ -148,6 +148,23 @@ npm run check   # typecheck + lint + tests
 npm run build
 ```
 
+### Live check
+
+The tests use fixtures. To see the real services, run the live check on your own machine (OpenSky may block cloud
+IPs). It calls the tools against the live APIs and reports data age, warnings and what each call actually cost,
+measured from `X-Rate-Limit-Remaining`:
+
+```sh
+npm run live-check                                  # about 6 states credits and 4 tracks credits
+npm run live-check -- --place "Frankfurt am Main"   # observer for flights_overhead (default Hamburg)
+npm run live-check -- --history                     # also the nightly-batch tools (about 60 flights credits)
+npm run live-check -- --record test/fixtures/live   # save raw OpenSky/Nominatim responses as fixtures
+```
+
+`--record` saves only GET responses from the OpenSky API and Nominatim, with their rate-limit headers. It never
+saves the token endpoint or request headers, so no credentials end up in the files. The files do contain live
+flight data; look through them before committing.
+
 See [CLAUDE.md](CLAUDE.md) for architecture and conventions.
 
 ## License

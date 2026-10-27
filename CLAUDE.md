@@ -26,7 +26,8 @@ OpenSky Network, enriched with aircraft metadata, airport data and geocoding.
 
 ```
 src/
-  index.ts            entry point: config, wiring, stdio transport, background dataset loading
+  index.ts            entry point: stdio transport, background dataset loading
+  app.ts              createContext(): wires all sources from the config (shared by index.ts and the live check)
   server.ts           MCP server, tool + resource registration, server instructions
   config.ts           env parsing (OPENSKY_CLIENT_ID, OPENSKY_CLIENT_SECRET, SQUAWK_CACHE_DIR, URLs), version from package.json
   tools/              one file per tool; thin: validate input, call sources, format result
@@ -42,6 +43,8 @@ src/
     aircraft-db/      OpenSky aircraft database CSV: download, local cache, compact index by icao24/registration
     ourairports/      OurAirports CSV: download, local cache, index by ICAO/IATA/ident/name
     nominatim/        geocoding with 1 req/s throttle, User-Agent, persistent cache
+  live-check/         `npm run live-check`: runs the tools against the live APIs, measures credits,
+                      optionally records fixtures (recorder.ts never saves token requests or headers)
   core/
     cache.ts          TTL cache with in-flight coalescing and stale-on-error fallback
     retry.ts          backoff for 429/5xx, honours retry-after, gives up on long waits
