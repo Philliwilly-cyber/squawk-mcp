@@ -15,6 +15,8 @@ const statesNearFrankfurt = {
     ["4ca123", "RYR1EF  ", "Ireland", nowS, nowS, 8.6, 50.1, 11_000, false, 230, 300, 0, null, 11_050, "7700", false, 0, 4],
     // Seen live at EDDH: 15 m above the field at 93 kn with almost no vertical rate.
     ["4d240d", "EWG62GE ", "Malta", nowS, nowS, 8.55, 50.03, 126, false, 48, 250, 0.3, null, null, "1126", false, 0, 0],
+    // High-pressure day: barometric altitude reads 300 m low; the geometric altitude shows it is still on approach.
+    ["3c6777", "DLH2GH  ", "Germany", nowS, nowS, 8.45, 50.05, 200, false, 75, 70, -4, null, 500, "1000", false, 0, 0],
   ],
 };
 
@@ -64,6 +66,7 @@ describe("airport_traffic", () => {
       DLH1CD: "likely approaching / landing",
       RYR1EF: "in the vicinity / overflying",
       EWG62GE: "just above the ground: taking off or landing",
+      DLH2GH: "likely approaching / landing",
     });
     expect((json["warnings"] as string[]).some((w) => w.includes("RYR1EF is squawking 7700"))).toBe(true);
   });
