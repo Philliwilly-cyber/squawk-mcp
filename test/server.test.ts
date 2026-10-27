@@ -1,18 +1,8 @@
 import { readFileSync } from "node:fs";
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { Throttle } from "../src/core/throttle.js";
-import { createServer } from "../src/server.js";
-import { AircraftDatabase } from "../src/sources/aircraft-db/aircraft-db.js";
-import { Nominatim } from "../src/sources/nominatim/nominatim.js";
-import { OpenSkyClient } from "../src/sources/opensky/client.js";
-import { OpenSkyService } from "../src/sources/opensky/service.js";
-import { AirportSource } from "../src/sources/ourairports/airports.js";
-import { fixture, jsonResponse, noRetry, routeFetch } from "./helpers.js";
+import { type Harness, resultJson as text, startServer } from "./harness.js";
+import { fixture, jsonResponse } from "./helpers.js";
 
 // 2017-10-05 11:34:12 UTC, a few seconds after the fixture's state vectors.
 const NOW = new Date(1_507_203_252_000);
@@ -21,45 +11,27 @@ const aircraftCsv = `icao24,registration,manufacturername,model,typecode,operato
 aa8c39,N12345,Boeing,737-924,B739,United Airlines,UAL,Someone,2001-01-01
 `;
 
-let dir: string;
+let harness: Harness;
 let client: Client;
 
-function text(result: unknown): Record<string, unknown> {
-  const content = (result as { content: { type: string; text: string }[] }).content;
-  return JSON.parse(content[0]?.text ?? "{}") as Record<string, unknown>;
-}
-
 beforeAll(async () => {
-  dir = await mkdtemp(join(tmpdir(), "squawk-server-"));
-  const fetchFn = routeFetch({
-    "/api/states/all": () => jsonResponse(fixture("states-all.json"), 200, { "X-Rate-Limit-Remaining": "399" }),
-    "/search": () =>
-      jsonResponse([{ lat: "33.9", lon: "-118.1", display_name: "Downey, California", boundingbox: ["33.8", "34.0", "-118.2", "-118.0"] }]),
-    "/airports.csv": () => new Response(readFileSync(new URL("./fixtures/airports.csv", import.meta.url), "utf8")),
-    "/aircraft.csv": () => new Response(aircraftCsv),
-  });
-  const shared = { cacheDir: dir, userAgent: "squawk-mcp/test", fetchFn };
-  const opensky = new OpenSkyService(
-    new OpenSkyClient({ baseUrl: "https://opensky.example/api", userAgent: "t", fetchFn, tokens: null, retry: noRetry, now: () => NOW.getTime() }),
-    () => NOW.getTime(),
+  harness = await startServer(
+    {
+      "/api/states/all": () => jsonResponse(fixture("states-all.json"), 200, { "X-Rate-Limit-Remaining": "399" }),
+      "/search": () =>
+        jsonResponse([
+          { lat: "33.9", lon: "-118.1", display_name: "Downey, California", boundingbox: ["33.8", "34.0", "-118.2", "-118.0"] },
+        ]),
+      "/airports.csv": () => new Response(readFileSync(new URL("./fixtures/airports.csv", import.meta.url), "utf8")),
+      "/aircraft.csv": () => new Response(aircraftCsv),
+    },
+    NOW,
   );
-  const server = createServer({
-    opensky,
-    aircraftDb: new AircraftDatabase({ ...shared, url: "https://data.example/aircraft.csv" }),
-    airports: new AirportSource({ ...shared, url: "https://data.example/airports.csv" }),
-    geocoder: new Nominatim({ ...shared, baseUrl: "https://nominatim.example", throttle: new Throttle(0) }),
-    clock: () => NOW,
-    version: "0.0.0-test",
-    cacheDir: dir,
-  });
-  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-  client = new Client({ name: "test", version: "1" });
-  await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
+  client = harness.client;
 });
 
 afterAll(async () => {
-  await client.close();
-  await rm(dir, { recursive: true, force: true });
+  await harness.close();
 });
 
 describe("squawk-mcp server", () => {
