@@ -29,7 +29,7 @@ export function registerServiceStatus(server: McpServer, ctx: ToolContext): void
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
     () =>
-      runTool(async () => {
+      runTool(() => {
         const builder = new EnvelopeBuilder(ctx.clock()).source("squawk-mcp").authMode(ctx.opensky.authMode);
         if (ctx.opensky.authMode === "anonymous") {
           builder.warn("Anonymous mode: set OPENSKY_CLIENT_ID and OPENSKY_CLIENT_SECRET for 10x the credits and 5 s resolution.");
@@ -41,7 +41,7 @@ export function registerServiceStatus(server: McpServer, ctx: ToolContext): void
           ]),
         );
         builder.note("Credit balances are only known after the first request to each endpoint group in this session.");
-        return jsonResult(
+        return Promise.resolve(jsonResult(
           builder.build({
             version: ctx.version,
             opensky: {
@@ -53,11 +53,11 @@ export function registerServiceStatus(server: McpServer, ctx: ToolContext): void
                 flights_and_tracks: "4 for the last 24 h, 30 for 1-2 days, more for longer ranges",
               },
             },
-            aircraft_database: datasetStatus(await ctx.aircraftDb.get(0), (index) => index.size),
-            airports: datasetStatus(await ctx.airports.get(0), (index) => index.airports.length),
+            aircraft_database: datasetStatus(ctx.aircraftDb.peek(), (index) => index.size),
+            airports: datasetStatus(ctx.airports.peek(), (index) => index.airports.length),
             cache_dir: ctx.cacheDir,
           }),
-        );
+        ));
       }),
   );
 }

@@ -155,6 +155,10 @@ export class AircraftDatabase {
     this.dataset.start();
   }
 
+  peek(): DatasetState<AircraftIndex> {
+    return this.dataset.peek();
+  }
+
   get(waitMs = 2_000): Promise<DatasetState<AircraftIndex>> {
     return this.dataset.get(waitMs);
   }

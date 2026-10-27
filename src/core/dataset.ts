@@ -16,11 +16,23 @@ export interface Loaded<T> {
 export class LazyDataset<T> {
   private promise: Promise<Loaded<T>> | null = null;
   private state: DatasetState<T> = { status: "loading" };
+  private failedAt = Number.NEGATIVE_INFINITY;
 
-  constructor(private readonly loader: () => Promise<Loaded<T>>) {}
+  constructor(
+    private readonly loader: () => Promise<Loaded<T>>,
+    /** After a failed load, wait this long before trying again (a dataset can be a large download). */
+    private readonly retryAfterMs = 10 * 60_000,
+    private readonly now: () => number = Date.now,
+  ) {}
+
+  /** The current state, without starting or waiting for a load. */
+  peek(): DatasetState<T> {
+    return this.state;
+  }
 
   start(): void {
     if (this.promise) return;
+    if (this.state.status === "failed" && this.now() - this.failedAt < this.retryAfterMs) return;
     this.promise = this.loader().then(
       (loaded) => {
         this.state = { status: "ready", ...loaded };
@@ -28,7 +40,8 @@ export class LazyDataset<T> {
       },
       (error: unknown) => {
         this.state = { status: "failed", error: error instanceof Error ? error.message : String(error) };
-        // Allow a later call to try again.
+        this.failedAt = this.now();
+        // Allow a later call to try again once the cool-down has passed.
         this.promise = null;
         throw error;
       },

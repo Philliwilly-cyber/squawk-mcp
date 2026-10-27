@@ -170,6 +170,10 @@ export class AirportSource {
     this.dataset.start();
   }
 
+  peek(): DatasetState<AirportIndex> {
+    return this.dataset.peek();
+  }
+
   get(waitMs = 30_000): Promise<DatasetState<AirportIndex>> {
     return this.dataset.get(waitMs);
   }
