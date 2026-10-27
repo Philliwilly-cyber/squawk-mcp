@@ -39,3 +39,60 @@ export const systemClock: Clock = () => new Date();
 export function utcDayStart(unixSeconds: number): number {
   return unixSeconds - (unixSeconds % 86_400);
 }
+
+/** UTC offset of Europe/Berlin at the given instant, in minutes (60 or 120). */
+export function berlinOffsetMinutes(date: Date): number {
+  const iso = toBerlinIso(date);
+  const match = /([+-])(\d{2}):(\d{2})$/.exec(iso);
+  if (!match) return 0;
+  const [, sign, hours, minutes] = match;
+  return (sign === "-" ? -1 : 1) * (Number(hours) * 60 + Number(minutes));
+}
+
+/** Converts a wall-clock time in Europe/Berlin to an instant. */
+function berlinWallClockToDate(year: number, month: number, day: number, hour = 0, minute = 0, second = 0): Date {
+  const guess = Date.UTC(year, month - 1, day, hour, minute, second);
+  // Two passes settle the offset, also near DST switches.
+  let instant = guess - berlinOffsetMinutes(new Date(guess)) * 60_000;
+  instant = guess - berlinOffsetMinutes(new Date(instant)) * 60_000;
+  return new Date(instant);
+}
+
+/** The Europe/Berlin calendar date (YYYY-MM-DD) of an instant. */
+export function berlinDate(date: Date): string {
+  return toBerlinIso(date).slice(0, 10);
+}
+
+/** Shifts a YYYY-MM-DD date by whole days. */
+export function addDays(isoDate: string, days: number): string {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  return new Date(Date.UTC(y ?? 1970, (m ?? 1) - 1, (d ?? 1) + days)).toISOString().slice(0, 10);
+}
+
+/** Start and end (Unix seconds, end exclusive minus one) of a Europe/Berlin calendar day. */
+export function berlinDayRange(isoDate: string): { begin: number; end: number } {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+  if (!match) throw new RangeError(`Invalid date "${isoDate}", expected YYYY-MM-DD`);
+  const [, y, m, d] = match.map(Number);
+  const begin = toUnixSeconds(berlinWallClockToDate(y ?? 0, m ?? 0, d ?? 0));
+  const next = addDays(isoDate, 1).split("-").map(Number);
+  const end = toUnixSeconds(berlinWallClockToDate(next[0] ?? 0, next[1] ?? 0, next[2] ?? 0)) - 1;
+  return { begin, end };
+}
+
+/**
+ * Parses a user-supplied time. ISO 8601 with Z or an offset is taken as is; without an
+ * offset it is read as Europe/Berlin wall-clock time. Plain numbers are Unix seconds.
+ */
+export function parseUserTime(input: string): Date {
+  const text = input.trim();
+  if (/^\d{9,11}$/.test(text)) return new Date(Number(text) * 1000);
+  const naive = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?$/.exec(text);
+  if (naive) {
+    const [, y, mo, d, h, mi, s] = naive;
+    return berlinWallClockToDate(Number(y), Number(mo), Number(d), Number(h ?? 0), Number(mi ?? 0), Number(s ?? 0));
+  }
+  const parsed = Date.parse(text);
+  if (Number.isNaN(parsed)) throw new RangeError(`Could not understand the time "${input}". Use ISO 8601, e.g. 2026-10-22T14:00.`);
+  return new Date(parsed);
+}
