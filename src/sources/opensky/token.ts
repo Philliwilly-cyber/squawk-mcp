@@ -67,7 +67,9 @@ export class TokenManager {
     const lifetimeS = typeof data.expires_in === "number" ? data.expires_in : DEFAULT_LIFETIME_S;
 
     this.token = data.access_token;
-    this.expiresAt = this.now() + Math.max(0, lifetimeS * 1000 - REFRESH_MARGIN_MS);
+    // Short-lived tokens would otherwise never be reused; refresh those at half their lifetime.
+    const marginMs = Math.min(REFRESH_MARGIN_MS, (lifetimeS * 1000) / 2);
+    this.expiresAt = this.now() + lifetimeS * 1000 - marginMs;
     return this.token;
   }
 }

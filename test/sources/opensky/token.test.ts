@@ -50,3 +50,15 @@ describe("TokenManager", () => {
     await expect(manager.getToken()).rejects.toBeInstanceOf(AuthError);
   });
 });
+
+describe("TokenManager with short-lived tokens", () => {
+  it("reuses a token shorter-lived than the refresh margin", async () => {
+    let now = 0;
+    const fetchFn = vi.fn().mockResolvedValue(tokenResponse("a", 30));
+    const manager = new TokenManager(credentials, "https://auth.example/token", fetchFn, () => now);
+    await manager.getToken();
+    now = 10_000;
+    await manager.getToken();
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+});
