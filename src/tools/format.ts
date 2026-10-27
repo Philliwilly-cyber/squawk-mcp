@@ -8,7 +8,7 @@ import { altitude, speed, verticalRate } from "../core/units.js";
 import type { AircraftIndex, AircraftInfo } from "../sources/aircraft-db/aircraft-db.js";
 import type { OpenSkyResult } from "../sources/opensky/service.js";
 import { AIRCRAFT_CATEGORIES, type Flight, type StateVector } from "../sources/opensky/types.js";
-import { NOTE_SQUAWK } from "./notes.js";
+import { NOTE_DISCRETE_SQUAWK, NOTE_SQUAWK } from "./notes.js";
 
 export function aircraftSummary(info: AircraftInfo | undefined): Record<string, string | null> | null {
   if (!info) return null;
@@ -23,8 +23,20 @@ export function aircraftSummary(info: AircraftInfo | undefined): Record<string, 
   };
 }
 
-export function squawkDetails(code: string | null): SquawkInfo | null {
-  return code === null ? null : explainSquawk(code);
+/**
+ * Squawk explanation for lists of aircraft. Ordinary ATC-assigned codes get only their
+ * label (the full text is added once as a note); special codes get the full explanation.
+ */
+export function squawkDetails(code: string | null): SquawkInfo | Pick<SquawkInfo, "code" | "category" | "label"> | null {
+  if (code === null) return null;
+  const info = explainSquawk(code);
+  return info.category === "discrete" ? { code: info.code, category: info.category, label: info.label } : info;
+}
+
+/** Categories 0 and 1 mean "no information"; reporting them only adds noise. */
+function categoryLabel(category: number | null): string | null {
+  if (category === null || category <= 1) return null;
+  return AIRCRAFT_CATEGORIES[category] ?? `unknown (${category})`;
 }
 
 export interface FormatOptions {
@@ -60,7 +72,7 @@ export function formatState(state: StateVector, options: FormatOptions): Record<
     track_deg: state.trueTrack === null ? null : Math.round(state.trueTrack),
     vertical_rate: verticalRate(state.verticalRate),
     squawk: squawkDetails(state.squawk),
-    category: state.category === null ? null : (AIRCRAFT_CATEGORIES[state.category] ?? `unknown (${state.category})`),
+    category: categoryLabel(state.category),
     position_source: state.positionSource,
     position_age_s: state.timePosition === null ? null : Math.max(0, options.nowS - state.timePosition),
     last_contact: unixToBerlinIso(state.lastContact),
@@ -85,13 +97,16 @@ export function formatFlight(flight: Flight, aircraft: AircraftIndex | undefined
 /** Adds squawk warnings for emergency codes in a list of states. */
 export function addSquawkWarnings(builder: EnvelopeBuilder, states: readonly StateVector[]): void {
   let anySquawk = false;
+  let anyDiscrete = false;
   for (const state of states) {
     if (state.squawk !== null) anySquawk = true;
+    if (state.squawk !== null && explainSquawk(state.squawk).category === "discrete") anyDiscrete = true;
     if (isEmergencySquawk(state.squawk) && state.squawk !== null) {
       builder.warn(emergencyWarning(state.squawk, state.callsign ?? state.icao24));
     }
   }
   if (anySquawk) builder.note(NOTE_SQUAWK);
+  if (anyDiscrete) builder.note(NOTE_DISCRETE_SQUAWK);
 }
 
 /** Copies OpenSky metadata (auth, cache, data time, warnings, quota) into the envelope. */
