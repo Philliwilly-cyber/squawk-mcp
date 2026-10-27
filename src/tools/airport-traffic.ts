@@ -17,6 +17,9 @@ type Direction = "arrival" | "departure";
 function phase(state: StateVector, fieldElevationM: number): string {
   if (state.onGround) return "on ground";
   const height = state.baroAltitude === null ? null : state.baroAltitude - fieldElevationM;
+  // Airborne but barely above the field: rotating or about to touch down; the vertical rate
+  // is often near zero there, so it cannot tell the two apart.
+  if (height !== null && height < 150) return "just above the ground: taking off or landing";
   if (height !== null && height < 1_500 && state.verticalRate !== null) {
     if (state.verticalRate < -1) return "likely approaching / landing";
     if (state.verticalRate > 1) return "likely departing / climbing";
