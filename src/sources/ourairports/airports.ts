@@ -19,6 +19,8 @@ export interface Airport {
   icao: string | null;
   iata: string | null;
   wikipedia: string | null;
+  /** Alternative names, e.g. "Flughafen München Franz Josef Strauß" for Munich Airport. */
+  keywords: string[];
 }
 
 const TYPE_RANK: Readonly<Record<string, number>> = {
@@ -65,16 +67,23 @@ export class AirportIndex {
     const matches = this.airports
       .filter((a) => a !== exact && a.type !== "closed")
       .map((a) => {
-        const name = normalize(a.name);
-        const city = a.municipality ? normalize(a.municipality) : "";
+        // Keywords hold local names that the English name and city miss ("München" for EDDM).
+        const texts = [a.name, a.municipality ?? "", ...a.keywords].map(normalize);
         let score = -1;
-        if (name === needle || city === needle) score = 0;
-        else if (name.startsWith(needle) || city.startsWith(needle)) score = 1;
-        else if (name.includes(needle) || city.includes(needle)) score = 2;
+        if (texts.some((t) => t === needle)) score = 0;
+        else if (texts.some((t) => t.startsWith(needle))) score = 1;
+        else if (texts.some((t) => t.includes(needle))) score = 2;
         return { a, score };
       })
       .filter((m) => m.score >= 0)
-      .sort((x, y) => x.score - y.score || rank(x.a) - rank(y.a) || x.a.name.localeCompare(y.a.name))
+      // The airport type outweighs how well the text matched: "Frankfurt" should find EDDF
+      // (prefix match on "Frankfurt am Main") before a heliport whose city is exactly "Frankfurt".
+      .sort(
+        (x, y) =>
+          rank(x.a) * 2 + x.score - (rank(y.a) * 2 + y.score) ||
+          Number(y.a.scheduledService) - Number(x.a.scheduledService) ||
+          x.a.name.localeCompare(y.a.name),
+      )
       .map((m) => m.a);
     return (exact ? [exact, ...matches] : matches).slice(0, limit);
   }
@@ -128,6 +137,10 @@ export function parseAirportRows(rows: Iterable<string[]>): Airport[] {
       icao,
       iata: optional(get("iata_code")),
       wikipedia: optional(get("wikipedia_link")),
+      keywords: (optional(get("keywords")) ?? "")
+        .split(",")
+        .map((k) => k.trim())
+        .filter((k) => k !== ""),
     });
   }
   return airports;

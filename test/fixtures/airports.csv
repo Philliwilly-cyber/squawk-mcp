@@ -4,3 +4,6 @@
 323687,"EDDB","large_airport","Berlin Brandenburg Airport",52.351389,13.493889,157,"EU","DE","DE-BR","Berlin","yes","EDDB","BER","EDDB",,,"https://en.wikipedia.org/wiki/Berlin_Brandenburg_Airport",
 2215,"EDDT","closed","Berlin-Tegel Airport (closed)",52.5597,13.2877,122,"EU","DE","DE-BE","Berlin","no",,"TXL","EDDT",,,,
 2216,"EDHI","medium_airport","Hamburg-Finkenwerder Airport",53.535301,9.83554,23,"EU","DE","DE-HH","Hamburg","no","EDHI","XFW","EDHI",,,,
+331511,"DE-0922","heliport","Frankfurt am Main Accident Hospital Roof Helipad",50.145472,8.708981,,"EU","DE","DE-HE","Frankfurt","no",,,,,,,
+2218,"EDDM","large_airport","Munich Airport",48.353802,11.7861,1487,"EU","DE","DE-BY","Munich","yes","EDDM","MUC","EDDM",,,,"Franz Josef Strauss Airport, Flughafen München Franz Josef Strauß"
+331000,"DE-0468","heliport","Klinikum München Helipad",48.13,11.56,,"EU","DE","DE-BY","München","no",,,,,,,
