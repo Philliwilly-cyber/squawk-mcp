@@ -1,0 +1,8 @@
+{
+  "url": "https://opensky-network.org/api/flights/aircraft?icao24=3e1206&begin=1792969200&end=1793055599",
+  "status": 403,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": "You cannot access historical flights"
+}

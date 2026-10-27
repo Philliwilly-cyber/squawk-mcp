@@ -1,0 +1,33 @@
+{
+  "url": "https://opensky-network.org/api/states/all?icao24=3e1206&extended=1",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "x-rate-limit-remaining": "381"
+  },
+  "body": {
+    "time": 1793093726,
+    "states": [
+      [
+        "3e1206",
+        "CHR50   ",
+        "Germany",
+        1793093726,
+        1793093726,
+        10.0825,
+        53.5112,
+        167.64,
+        false,
+        56.5,
+        280.49,
+        1.95,
+        null,
+        220.98,
+        "0034",
+        false,
+        0,
+        0
+      ]
+    ]
+  }
+}
