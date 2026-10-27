@@ -71,7 +71,8 @@ Every tool result contains, besides its payload:
 - `server_time`: when squawk-mcp produced the answer (Europe/Berlin, ISO 8601 with offset)
 - `data_time`: the time the data refers to (e.g. OpenSky `time`)
 - `data_age_seconds`: `server_time - data_time`
-- `auth_mode`: `oauth2` or `anonymous`
+- `auth_mode`: `oauth2` or `anonymous`; `not_applicable` for tools that make no OpenSky call
+  (e.g. `explain_squawk`, `airport_info`)
 - `cache`: `fresh` | `cached` | `stale` (stale = served from cache after an upstream failure)
 - `coverage_notes`: what the data cannot show (ADS-B coverage gaps, military
   aircraft often not transmitting, nightly-batched flights, ...)
