@@ -21,6 +21,11 @@ export default tseslint.config(
     },
   },
   {
+    // The live check is a command-line report: stdout is its output.
+    files: ["src/live-check/main.ts"],
+    rules: { "no-console": "off" },
+  },
+  {
     files: ["**/*.js"],
     extends: [tseslint.configs.disableTypeChecked],
   },
