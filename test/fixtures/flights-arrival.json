@@ -1,0 +1,16 @@
+[
+  {
+    "icao24": "3c675a",
+    "firstSeen": 1517220729,
+    "estDepartureAirport": "EDDT",
+    "lastSeen": 1517227857,
+    "estArrivalAirport": "EDDF",
+    "callsign": "DLH1AB  ",
+    "estDepartureAirportHorizDistance": 1132,
+    "estDepartureAirportVertDistance": 34,
+    "estArrivalAirportHorizDistance": 1530,
+    "estArrivalAirportVertDistance": 15,
+    "departureAirportCandidatesCount": 0,
+    "arrivalAirportCandidatesCount": 2
+  }
+]
