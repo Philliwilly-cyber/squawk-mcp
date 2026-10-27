@@ -1,6 +1,5 @@
 import { type CacheStatus, TtlCache } from "../../core/cache.js";
 import { type BoundingBox, boxContainsBox, contains } from "../../core/geo.js";
-import { HttpError } from "../../core/http.js";
 import { toBerlinIso, utcDayStart } from "../../core/time.js";
 import type { OpenSkyAuthMode, OpenSkyClient } from "./client.js";
 import { type CreditBucket, LOW_CREDIT_THRESHOLD, historyCost, statesCost } from "./credits.js";
@@ -230,8 +229,4 @@ export class OpenSkyService {
       warnings,
     };
   }
-}
-
-export function isQuotaError(error: unknown): boolean {
-  return error instanceof HttpError && error.status === 429;
 }
