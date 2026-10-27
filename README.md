@@ -149,3 +149,8 @@ npm run build
 ```
 
 See [CLAUDE.md](CLAUDE.md) for architecture and conventions.
+
+## License
+
+[MIT](LICENSE). The license covers the squawk-mcp code only; the data it fetches is subject to the terms of its
+sources (OpenSky Network, OpenStreetMap/Nominatim, OurAirports).

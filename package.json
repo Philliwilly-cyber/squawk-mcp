@@ -2,13 +2,15 @@
   "name": "squawk-mcp",
   "version": "0.1.0",
   "description": "Ask your AI what's flying overhead. A read-only MCP server for live flight data from the OpenSky Network.",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "squawk-mcp": "dist/index.js"
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=22.12"
