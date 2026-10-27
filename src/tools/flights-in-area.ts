@@ -87,7 +87,7 @@ export function registerFlightsInArea(server: McpServer, ctx: ToolContext): void
           includeOnGround: args.include_on_ground,
           maxResults: args.max_results,
         });
-        return jsonResult(builder.build({ area: { name: area.label, ...area.box }, ...live }));
+        return jsonResult(builder.build({ area: { name: area.label, ...area.box }, ...live.data }));
       }),
   );
 }

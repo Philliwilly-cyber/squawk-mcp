@@ -74,13 +74,13 @@ export function registerAircraftLookup(server: McpServer, ctx: ToolContext): voi
             maxResults: 20,
             filter: (s) => s.callsign !== null && normalizeCallsign(s.callsign) === callsign,
           });
-          if (live["count"] === 0) {
+          if (live.count === 0) {
             builder.note(
               `No live aircraft with callsign ${callsign} in ${areaName}. It may not be flying, or be outside coverage. ` +
                 'If this is a registration, retry with kind "registration".',
             );
           }
-          return jsonResult(builder.build({ query: text, matched_by: "callsign", area: areaName, ...live }));
+          return jsonResult(builder.build({ query: text, matched_by: "callsign", area: areaName, ...live.data }));
         }
 
         const resolved = await resolveAircraft(ctx, builder, text, kind);

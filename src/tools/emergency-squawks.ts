@@ -4,7 +4,7 @@ import { EnvelopeBuilder } from "../core/envelope.js";
 import { EMERGENCY_CAVEAT, explainSquawk, isEmergencySquawk } from "../core/squawk.js";
 import type { ToolContext } from "./context.js";
 import { AREA_SCHEMA, resolveArea } from "./flights-in-area.js";
-import { liveStates } from "./live.js";
+import { type LiveResult, liveStates } from "./live.js";
 import { ToolInputError, jsonResult, runTool } from "./result.js";
 
 export function registerEmergencySquawks(server: McpServer, ctx: ToolContext): void {
@@ -26,7 +26,7 @@ export function registerEmergencySquawks(server: McpServer, ctx: ToolContext): v
       runTool(async () => {
         const builder = new EnvelopeBuilder(ctx.clock());
         let area: Record<string, unknown>;
-        let live: Record<string, unknown>;
+        let live: LiveResult;
         const filter = (s: { squawk: string | null }): boolean => isEmergencySquawk(s.squawk);
         if (args.worldwide) {
           builder.warn("Worldwide search: this request costs 4 OpenSky credits.");
@@ -40,7 +40,7 @@ export function registerEmergencySquawks(server: McpServer, ctx: ToolContext): v
           area = { name: resolved.label, ...resolved.box };
           live = await liveStates(ctx, builder, { box: resolved.box, includeOnGround: true, maxResults: 100, filter });
         }
-        if (live["count"] === 0) {
+        if (live.count === 0) {
           builder.note(
             "No emergency squawk seen in this area right now. Aircraft outside receiver coverage, or not transmitting, cannot be seen.",
           );
@@ -48,7 +48,7 @@ export function registerEmergencySquawks(server: McpServer, ctx: ToolContext): v
         return jsonResult(
           builder.build({
             area,
-            ...live,
+            ...live.data,
             codes: ["7500", "7600", "7700"].map((code) => explainSquawk(code)),
             caveat: EMERGENCY_CAVEAT,
           }),

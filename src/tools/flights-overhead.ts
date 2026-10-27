@@ -44,13 +44,13 @@ export function registerFlightsOverhead(server: McpServer, ctx: ToolContext): vo
           includeOnGround: args.include_on_ground,
           maxResults: args.max_results,
         });
-        if (live["count"] === 0) {
+        if (live.count === 0) {
           builder.note(
             "No aircraft found. That can mean empty sky, but also missing receiver coverage at this place or altitude.",
           );
         }
         return jsonResult(
-          builder.build({ location: { name: location.label, ...location.point }, radius_km: args.radius_km, ...live }),
+          builder.build({ location: { name: location.label, ...location.point }, radius_km: args.radius_km, ...live.data }),
         );
       }),
   );

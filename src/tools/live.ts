@@ -16,8 +16,17 @@ export interface LiveQuery {
   filter?: (state: StateVector) => boolean;
 }
 
+export interface LiveResult {
+  /** All matching aircraft, before max_results is applied. */
+  count: number;
+  /** The aircraft shown, in output order. */
+  shown: StateVector[];
+  /** Formatted payload: count, shown, aircraft, quota. */
+  data: Record<string, unknown> & { aircraft: Record<string, unknown>[] };
+}
+
 /** Fetches live states for a box, enriches and sorts them, and fills the envelope. */
-export async function liveStates(ctx: ToolContext, builder: EnvelopeBuilder, query: LiveQuery): Promise<Record<string, unknown>> {
+export async function liveStates(ctx: ToolContext, builder: EnvelopeBuilder, query: LiveQuery): Promise<LiveResult> {
   // Start the database lookup in parallel with the API call.
   const dbState = ctx.aircraftDb.get(2_000);
   const result = await ctx.opensky.getStates(query.box ? { box: query.box } : {});
@@ -50,8 +59,12 @@ export async function liveStates(ctx: ToolContext, builder: EnvelopeBuilder, que
   const nowS = toUnixSeconds(ctx.clock());
   return {
     count: states.length,
-    shown: shown.length,
-    aircraft: shown.map((s) => formatState(s, { ...(observer ? { observer } : {}), aircraft, nowS })),
-    quota,
+    shown,
+    data: {
+      count: states.length,
+      shown: shown.length,
+      aircraft: shown.map((s) => formatState(s, { ...(observer ? { observer } : {}), aircraft, nowS })),
+      quota,
+    },
   };
 }
