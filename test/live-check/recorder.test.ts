@@ -49,3 +49,20 @@ describe("recordingFetch", () => {
     expect(await readdir(dir)).toEqual([]);
   });
 });
+
+describe("recordingFetch anonymization", () => {
+  it("never writes real aircraft identifiers", async () => {
+    const dirLocal = await mkdtemp(join(tmpdir(), "squawk-rec-anon-"));
+    try {
+      const inner = vi.fn(() =>
+        Promise.resolve(new Response(JSON.stringify({ time: 1, states: [["3e1206", "CHR50   ", "Germany"]] }))),
+      );
+      const recordings: Recording[] = [];
+      await recordingFetch(inner, dirLocal, recordings)("https://opensky-network.org/api/states/all?icao24=3e1206");
+      const saved = await readFile(recordings[0]?.file ?? "", "utf8");
+      expect(saved).not.toMatch(/3e1206|CHR50/);
+    } finally {
+      await rm(dirLocal, { recursive: true, force: true });
+    }
+  });
+});

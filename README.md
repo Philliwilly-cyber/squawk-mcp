@@ -136,8 +136,15 @@ retries with backoff on 429/5xx, and stale cache data (with a warning) when Open
 
 ## Terms of use
 
-OpenSky data is for **research and non-commercial use**. See the
-[OpenSky terms of use](https://opensky-network.org/about/terms-of-use). Publications using the data should cite:
+squawk-mcp is a client: it fetches OpenSky data with your own account (or anonymously), and you are bound by
+the [OpenSky terms of use](https://opensky-network.org/about/terms-of-use). Read them before you use it. The
+OpenSky API documentation speaks of **research and non-commercial use**. The OpenSky data license agreement
+(as published with OpenSky datasets) is narrower: non-profit research, non-profit education, commercial
+internal testing and evaluation, or government purposes. It also forbids passing the data on to others and
+requires aircraft identifiers to be de-identified in publications. squawk-mcp never bundles or republishes
+OpenSky data; what you do with the answers is up to you.
+
+Publications using the data should cite:
 
 > Matthias Schäfer, Martin Strohmeier, Vincent Lenders, Ivan Martinovic and Matthias Wilhelm.
 > "Bringing Up OpenSky: A Large-scale ADS-B Sensor Network for Research".
@@ -168,8 +175,9 @@ npm run live-check -- --record test/fixtures/live   # save raw OpenSky/Nominatim
 ```
 
 `--record` saves only GET responses from the OpenSky API and Nominatim, with their rate-limit headers. It never
-saves the token endpoint or request headers, so no credentials end up in the files. The files do contain live
-flight data; look through them before committing.
+saves the token endpoint or request headers, so no credentials end up in the files. Aircraft identifiers
+(icao24, callsign) are replaced with placeholders, as the OpenSky data license requires for anything published.
+The files still contain OpenSky data, so keep recordings for local testing and do not publish them in bulk.
 
 See [CLAUDE.md](CLAUDE.md) for architecture and conventions.
 

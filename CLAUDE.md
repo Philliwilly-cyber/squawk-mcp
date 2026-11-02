@@ -215,6 +215,18 @@ Measured live (2026-10-27, `npm run live-check`): a box <= 25 sq° costs 1, an
 - One account per person (multiple accounts get banned). Do not build anything
   that rotates credentials or IPs to dodge limits.
 - OpenSky explicitly asks not to request whitelisting for AI dashboards. Respect it.
+- OpenSky's "General Terms of Use & Data License Agreement" (copy as LICENSE.txt
+  with Zenodo record 6325961, 2022; the current page was not reachable from the dev
+  environment) licenses data "solely for the purpose of non-profit research,
+  non-profit education, commercial internal testing and evaluation of the data, or
+  for government purposes". It forbids making the data available to others (3 iii)
+  and requires de-identifying aircraft identifiers in any publication (3 i).
+  squawk-mcp itself only fetches data with each user's own account; it must never
+  bundle or republish OpenSky data.
+- **Never commit real aircraft identifiers** (icao24, callsign, registration) from
+  OpenSky responses. Recorded fixtures go through `src/live-check/anonymize.ts`;
+  hand-written test data uses obviously fake values. The well-known D-AIZZ / 3c675a
+  example from the API docs is fine.
 
 ### OpenSky Aircraft Database (CSV)
 

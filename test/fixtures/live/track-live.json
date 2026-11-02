@@ -1,13 +1,13 @@
 {
-  "url": "https://opensky-network.org/api/tracks/all?icao24=3e1206&time=0",
+  "url": "https://opensky-network.org/api/tracks/all?time=0&icao24=f00001",
   "status": 200,
   "headers": {
     "content-type": "application/json",
     "x-rate-limit-remaining": "396"
   },
   "body": {
-    "icao24": "3e1206",
-    "callsign": "CHR50   ",
+    "icao24": "f00001",
+    "callsign": "ANON10  ",
     "startTime": 1793093617,
     "endTime": 1793093727,
     "path": [

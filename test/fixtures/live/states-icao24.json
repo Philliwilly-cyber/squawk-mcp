@@ -1,5 +1,5 @@
 {
-  "url": "https://opensky-network.org/api/states/all?icao24=3e1206&extended=1",
+  "url": "https://opensky-network.org/api/states/all?extended=1&icao24=f00001",
   "status": 200,
   "headers": {
     "content-type": "application/json",
@@ -9,8 +9,8 @@
     "time": 1793093726,
     "states": [
       [
-        "3e1206",
-        "CHR50   ",
+        "f00001",
+        "ANON10  ",
         "Germany",
         1793093726,
         1793093726,
